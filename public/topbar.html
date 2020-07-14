@@ -32,7 +32,7 @@ _________________________________________________________ -->
 
                     <div id="login-message"> </div>
                     <p align="center">
-                        <a href="/auth/google" class="btn btn-danger"><span class="fa fa-google-plus"></span> Google</a>
+                        <a href="/google-login" class="btn btn-danger"><span class="fa fa-google-plus"></span> Google</a>
                     </p>
                     <hr>
                     <form action="index.html" method="get">
@@ -70,22 +70,29 @@ _________________________________________________________ -->
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal"
                             aria-hidden="true">&times;</button>
-                    <h4 class="modal-title" id="Login">Register or Sign-in with Google</h4>
+                    <h4 class="modal-title" id="Login" style:"text-align-center;">Register or Google signin</h4>
                 </div>
                 <div class="modal-body">
 
                     <div id="registration-message"> </div>
 
                     <form action="index.html" method="get">
-
 			<p align="center">
-				<a href="/auth/google" class="btn btn-danger"><span class="fa fa-google-plus"></span> Google</a>
+				<a href="google-login" class="btn btn-danger"><span class="fa fa-google-plus"></span> Google</a>
 			</p>
+                        <p align="center">
+                                <h5>OR continue below</h5>
+                        </p>
 			<hr>
                         <div class="form-group">
                             <label for="name">Username</label>
                             <input type="text" class="form-control" name="username"
 			    	id="register-username-modal" placeholder="username"required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="text" class="form-control" name="email"
+                                id="register-email-modal" placeholder="email" required>
                         </div>
                         <div class="form-group">
                             <label for="first-name">First name</label>
@@ -96,11 +103,6 @@ _________________________________________________________ -->
                             <label for="last-name">Last name</label>
                             <input type="text" class="form-control" name="last-name"
 			    	id="register-last-modal" placeholder="last name"required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="text" class="form-control" name="email"
-			    	id="register-email-modal" placeholder="email" required>
                         </div>
                         <div class="form-group">
                             <label for="password">Password</label>
@@ -140,7 +142,7 @@ _________________________________________________________ -->
                 if (typeof username !== 'undefined') {
                     $("#login").remove();
                     $("#register").remove();
-                    $("#howdy").append('<a href="#">Logged in as ' + username + '<\/a>').hide().fadeIn(200);
+                    $("#howdy").append('<a href="#">Logged in as ' + 'guest' + '<\/a>').hide().fadeIn(200);
                     $("#logout").hide().fadeIn(200);
                 } else {
                     $("#howdy").remove()

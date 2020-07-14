@@ -29,7 +29,10 @@
     "prom-client": "^6.3.0",
     "morgan": "^1.7.0",
     "connect-redis": "^3.2.0",
-    "googleapis": "latest"
+    "googleapis": "latest",
+    "jwt-decode": "2.2.0",
+    "ajax-client": "latest",
+    "xmlhttprequest": "latest"
   },
   "devDependencies": {
     "chai": "^3.5.0",
