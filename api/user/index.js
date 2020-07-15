@@ -350,17 +350,21 @@ app.get('/auth/google/callback', function (req, res, next) {
                 var decoded = jwt_decode(token_id);
                 console.log(decoded.email);
                 authed = true;
-                var body = JSON.stringify({
+                var postvals = JSON.stringify({
                         "username": decoded.email,
 			"password": decoded.sub,
                         "email": decoded.email,
                         "firstName": decoded.email,
                         "lastName": decoded.email
                  });
-		var url = "http://sock-shop.aws.thecloudgarage.com:5000/register";
-		                  var register = request.post(url, body, function(err, resp) {
+				var options = {
+					uri: 'http://sock-shop.aws.thecloudgarage.com:5000/register',
+					method: 'POST',
+					json: true,
+					body: postvals
+				};
+		                  var register = request.post(options, function(err, resp, body) {
                                         console.log("logged_in cookie: ");
-					console.log(body);
                                         });
 		res.redirect('/');
             }
