@@ -426,13 +426,11 @@ app.get('/google-login', (req, res) => {
                     return;
                 }
                 console.log("set cookie" + custId);
-                res.status(200);
                 res.cookie(cookie_name, req.session.id, {
                     maxAge: 3600000
                 }).send({id: custId});
                 console.log("Sent cookies.");
-                res.redirect('/');
-                return;
+		return;
             }
         );
     });
