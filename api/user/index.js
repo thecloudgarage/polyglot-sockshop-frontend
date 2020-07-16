@@ -196,13 +196,13 @@ var authed = false;
             json: true,
             body: req.body
         };
-	console.log(req.body)
-        console.log("Posting Customer: " + JSON.stringify(req.body));
 	console.log(req.body);
+        console.log("Posting Customer: " + JSON.stringify(req.body));
         async.waterfall([
                 function(callback) {
                     request(options, function(error, response, body) {
                         if (error !== null ) {
+			    console.log("first-error");
                             callback(error);
                             return;
                         }
@@ -252,8 +252,7 @@ var authed = false;
                 res.cookie(cookie_name, req.session.id, {
                     maxAge: 3600000
                 }).send({id: custId});
-                console.log("Sent cookies.");
-                res.end();
+                console.log("Sent cookies." + cookie_name);
                 return;
             }
         );
@@ -335,42 +334,108 @@ app.get('/google-login', (req, res) => {
     }
 });
 
-app.get('/auth/google/callback', function (req, res, next) {
-    const code = req.query.code
-    if (code) {
-        // Get an access token based on our OAuth code
-        oAuth2Client.getToken(code, function (err, tokens) {
-            if (err) {
-                console.log('Error authenticating')
-                console.log(err);
-            } else {
-                console.log('Successfully authenticated');
-                oAuth2Client.setCredentials(tokens);
-                var token_id = tokens.id_token;
-                var decoded = jwt_decode(token_id);
-                console.log(decoded.email);
-                authed = true;
-                var postvals = JSON.stringify({
-                        "username": decoded.email,
-			"password": decoded.sub,
-                        "email": decoded.email,
-                        "firstName": decoded.email,
-                        "lastName": decoded.email
-                 });
-				var options = {
-					uri: 'http://sock-shop.aws.thecloudgarage.com:5000/register',
-					method: 'POST',
-					json: true,
-					body: postvals
-				};
-		                  var register = request.post(options, function(err, resp, body) {
-                                        console.log("logged_in cookie: ");
-                                        });
-		res.redirect('/');
+	app.get('/auth/google/callback', function (req, res, next) {
+		const code = req.query.code
+		if (code) {
+			// Get an access token based on our OAuth code
+			oAuth2Client.getToken(code, function (err, tokens) {
+				if (err) {
+					console.log('Error authenticating')
+					console.log(err);
+				} else {
+					console.log('Successfully authenticated');
+					oAuth2Client.setCredentials(tokens);
+					var token_id = tokens.id_token;
+					var decoded = jwt_decode(token_id);
+					console.log(decoded.email);
+					authed = true;
+					var registration = {
+							username: decoded.email,
+							password: decoded.sub,
+							email: decoded.email,
+							firstName: decoded.email,
+							lastName: decoded.email
+					 };
+					 req.session.postvals = registration;
+					 next();
+				}
+			});
+		}
+	});
+
+    app.get("/auth/google/callback", function(req, res, next) {
+	console.log("Input: " + req.session.postvals);
+        var options = {
+            uri: endpoints.registerUrl,
+            method: 'POST',
+            json: true,
+            body: req.session.postvals
+        };
+	console.log(options);
+        console.log("Posting Customer: " + JSON.stringify(options.body));
+
+        async.waterfall([
+                function(callback) {
+                    request(options, function(error, response, body) {
+                        if (error !== null ) {
+			    console.log("error-one");
+                            callback(error);
+                            return;
+                        }
+                        if (response.statusCode == 200 && body != null && body != "") {
+                            if (body.error) {
+				console.log("error.two")
+                                callback(body.error);
+                                return;
+                            }
+                            console.log(body);
+                            var customerId = body.id;
+                            console.log("customer ID is: " + customerId);
+                            req.session.customerId = customerId;
+                            callback(null, customerId);
+                            return;
+                        }
+                        console.log(response.statusCode);
+                        callback(true);
+                    });
+                },
+                function(custId, callback) {
+                    var sessionId = req.session.id;
+                    console.log("Merging carts for customer id: " + custId + " and session id: " + sessionId);
+
+                    var options = {
+                        uri: endpoints.cartsUrl + "/" + custId + "/merge" + "?sessionId=" + sessionId,
+                        method: 'GET'
+                    };
+                    request(options, function(error, response, body) {
+                        if (error) {
+			    console.log("third-error");
+                            if(callback) callback(error);
+                            return;
+                        }
+                        console.log('Carts merged.');
+                        if(callback) callback(null, custId);
+                    });
+                }
+            ],
+            function(err, custId) {
+                if (err) {
+                    console.log("Error with log in: " + err);
+                    res.status(500);
+                    res.end();
+                    return;
+                }
+                console.log("set cookie" + custId);
+                res.status(200);
+                res.cookie(cookie_name, req.session.id, {
+                    maxAge: 3600000
+                }).send({id: custId});
+                console.log("Sent cookies.");
+                res.redirect('/');
+                return;
             }
-        });
-    }
-});
+        );
+    });
 
    module.exports = app;
 
