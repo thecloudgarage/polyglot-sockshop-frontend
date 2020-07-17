@@ -174,7 +174,7 @@ function username(id, callback) {
         success: function (data, textStatus, jqXHR) {
             json = JSON.parse(data);
             if (json.status_code !== 500) {
-                callback(json.firstName + " " + json.lastName);
+                callback(json.firstName);
             } else {
                 console.error('Could not get user information: ' + id + ', due to: ' + json.status_text + ' | ' + json.error);
                 return callback(undefined);

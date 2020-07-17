@@ -142,7 +142,7 @@ _________________________________________________________ -->
                 if (typeof username !== 'undefined') {
                     $("#login").remove();
                     $("#register").remove();
-                    $("#howdy").append('<a href="#">Logged in as ' + 'guest' + '<\/a>').hide().fadeIn(200);
+                    $("#howdy").append('<a href="#">Logged in as ' + username + '<\/a>').hide().fadeIn(200);
                     $("#logout").hide().fadeIn(200);
                 } else {
                     $("#howdy").remove()
