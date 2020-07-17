@@ -401,8 +401,22 @@ app.get('/google-login', (req, res) => {
                 },
                 function(custId, callback) {
                     var sessionId = req.session.id;
-                    if(callback) callback(null, custId);
-                    }
+                    console.log("Merging carts for customer id: " + custId + " and session id: " + sessionId);
+
+                    var options = {
+                        uri: endpoints.cartsUrl + "/" + custId + "/merge" + "?sessionId=" + sessionId,
+                        method: 'GET'
+                    };
+                    request(options, function(error, response, body) {
+                        if (error) {
+			    console.log("third-error");
+                            if(callback) callback(error);
+                            return;
+                        }
+                        console.log('Carts merged.');
+                        if(callback) callback(null, custId);
+                    });
+                }
             ],
             function(err, custId) {
                 if (err) {
@@ -412,11 +426,20 @@ app.get('/google-login', (req, res) => {
                     return;
                 }
                 console.log("set cookie" + custId);
+		res.write('<html>');
+		res.write('<head>');
+		res.write('<title>HTML Meta Tag</title>');
+		res.write('<meta http-equiv = "refresh" content = "2; url = http://sock-shop.aws.thecloudgarage.com:5000" />');
+		res.write('</head>');
+		res.write('<body>');
+		res.write('<p>You are successfully logged in, redirecting you to home page</p>');
+		res.write('</body>');
+		res.write('</html>');
                 res.cookie(cookie_name, req.session.id, {
                     maxAge: 3600000
-                });
+                }).send({id: custId});
                 console.log("Sent cookies.");
-		res.redirect('/');
+		return;
             }
         );
     });
