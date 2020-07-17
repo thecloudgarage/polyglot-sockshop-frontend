@@ -4,16 +4,15 @@
     var async = require("async"), express = require("express"), request = require("request"), endpoints = require("../endpoints"), helpers = require("../../helpers"),
  app = express(), cookie_name = "logged_in"
 
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const { google } = require('googleapis');
-const { AjaxClient } = require('ajax-client');
 const OAuth2Data = require('./google_key.json')
 const jwt_decode = require('jwt-decode')
 const CLIENT_ID = OAuth2Data.web.client_id;
 const CLIENT_SECRET = OAuth2Data.web.client_secret;
-const REDIRECT_URL = OAuth2Data.web.redirect_uris
-const client = new AjaxClient();
-const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL)
+const REDIRECT_URL_REGISTER = OAuth2Data.web.redirect_uris[0]
+const REDIRECT_URL_LOGIN = OAuth2Data.web.redirect_uris[1]
+const oAuth2ClientRegister = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL_REGISTER)
+const oAuth2ClientLogin = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL_LOGIN)
 var authed = false;
 
     app.get("/customers/:id", function(req, res, next) {
@@ -322,10 +321,10 @@ var authed = false;
             });
     });
 
-app.get('/google-login', (req, res) => {
+app.get('/google-register', (req, res) => {
         if (!authed) {
         // Generate an OAuth URL and redirect there
-        const url = oAuth2Client.generateAuthUrl({
+        const url = oAuth2ClientRegister.generateAuthUrl({
             access_type: 'offline',
             scope: 'https://www.googleapis.com/auth/userinfo.email'
         });
@@ -334,17 +333,17 @@ app.get('/google-login', (req, res) => {
     }
 });
 
-	app.get('/auth/google/callback', function (req, res, next) {
+	app.get('/auth/google/callback/register', function (req, res, next) {
 		const code = req.query.code
 		if (code) {
 			// Get an access token based on our OAuth code
-			oAuth2Client.getToken(code, function (err, tokens) {
+			oAuth2ClientRegister.getToken(code, function (err, tokens) {
 				if (err) {
 					console.log('Error authenticating')
 					console.log(err);
 				} else {
 					console.log('Successfully authenticated');
-					oAuth2Client.setCredentials(tokens);
+					oAuth2ClientRegister.setCredentials(tokens);
 					var token_id = tokens.id_token;
 					var decoded = jwt_decode(token_id);
 					console.log(decoded.email);
@@ -363,7 +362,7 @@ app.get('/google-login', (req, res) => {
 		}
 	});
 
-    app.get("/auth/google/callback", function(req, res, next) {
+    app.get("/auth/google/callback/register", function(req, res, next) {
 	console.log("Input: " + req.session.postvals);
         var options = {
             uri: endpoints.registerUrl,
