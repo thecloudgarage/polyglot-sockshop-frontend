@@ -13,7 +13,6 @@ const REDIRECT_URL_REGISTER = OAuth2Data.web.redirect_uris[0]
 const REDIRECT_URL_LOGIN = OAuth2Data.web.redirect_uris[1]
 const oAuth2ClientRegister = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL_REGISTER)
 const oAuth2ClientLogin = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL_LOGIN)
-var authed = false;
 
     app.get("/customers/:id", function(req, res, next) {
         helpers.simpleHttpRequest(endpoints.customersUrl + "/" + req.session.customerId, res, next);
@@ -322,7 +321,6 @@ var authed = false;
     });
 
 app.get('/google-register', (req, res) => {
-        if (!authed) {
         // Generate an OAuth URL and redirect there
         const url = oAuth2ClientRegister.generateAuthUrl({
             access_type: 'offline',
@@ -330,7 +328,6 @@ app.get('/google-register', (req, res) => {
         });
         console.log(url)
         res.redirect(url);
-    }
 });
 
 	app.get('/auth/google/callback/register', function (req, res, next) {
@@ -347,15 +344,15 @@ app.get('/google-register', (req, res) => {
 					var token_id = tokens.id_token;
 					var decoded = jwt_decode(token_id);
 					console.log(decoded.email);
-					authed = true;
-					var registration = {
+					console.log(decoded.sub);
+					var googleRegistration = {
 							username: decoded.email,
 							password: decoded.sub,
 							email: decoded.email,
 							firstName: decoded.email,
 							lastName: decoded.email
 					 };
-					 req.session.postvals = registration;
+					 req.session.googleRegister = googleRegistration;
 					 next();
 				}
 			});
@@ -368,10 +365,9 @@ app.get('/google-register', (req, res) => {
             uri: endpoints.registerUrl,
             method: 'POST',
             json: true,
-            body: req.session.postvals
+            body: req.session.googleRegister
         };
-	console.log(options);
-        console.log("Posting Customer: " + JSON.stringify(options.body));
+	console.log("Posting Customer: " + JSON.stringify(options.body));
 
         async.waterfall([
                 function(callback) {
@@ -420,7 +416,97 @@ app.get('/google-register', (req, res) => {
         );
     });
 
-   module.exports = app;
+//GOOGLE-LOGIN-FLOW
+
+app.get('/google-login', (req, res) => {
+console.log("request received for login");
+        // Generate an OAuth URL and redirect there
+        const url = oAuth2ClientLogin.generateAuthUrl({
+            access_type: 'offline',
+            scope: 'https://www.googleapis.com/auth/userinfo.email'
+        });
+        console.log(url)
+        res.redirect(url);
+});
+
+        app.get('/auth/google/callback/login', function (req, res, next) {
+                const code = req.query.code
+                if (code) {
+                        // Get an access token based on our OAuth code
+                        oAuth2ClientLogin.getToken(code, function (err, tokens) {
+                                if (err) {
+                                        console.log('Error authenticating')
+                                        console.log(err);
+                                } else {
+                                        console.log('Successfully authenticated');
+                                        oAuth2ClientLogin.setCredentials(tokens);
+                                        var token_id = tokens.id_token;
+                                        var decoded = jwt_decode(token_id);
+                                        console.log(decoded.email);
+                                        var user  = decoded.email;
+                                        var pass = decoded.sub;
+					var authGoogle = new Buffer.from(user + ':' + pass).toString('base64');
+					req.session.authGoogle = authGoogle;
+                                        next();
+                                }
+                        });
+                }
+        });
+
+    app.get("/auth/google/callback/login", function(req, res, next) {
+        console.log("Received login request");
+	var auth = req.session.authGoogle;
+	console.log(auth);
+                    var options = {
+                        headers: {
+			Authorization: 'Basic ' + auth,
+			'Content-Type': 'application/json'
+                        },
+                        uri: endpoints.loginUrl,
+			method: 'GET'
+                    };
+
+        async.waterfall([
+                    function(callback) {
+                    request(options, function(error, response, body) {
+                        if (error) {
+                            callback(error);
+                            return;
+                        }
+                        if (response.statusCode == 200 && body != null && body != "") {
+                            var customerId = JSON.parse(body).user.id;
+                            req.session.customerId = customerId;
+                            callback(null, customerId);
+                            return;
+                        }
+                        console.log(response.statusCode);
+                        callback(true);
+						});
+                },
+                function(custId, callback) {
+                    var sessionId = req.session.id;
+                        callback(null, custId);
+                    }
+                ],
+            function(err, custId) {
+                if (err) {
+                    console.log("Error with log in: " + err);
+                    res.status(401);
+                    res.end();
+                    return;
+                }
+                res.cookie(cookie_name, req.session.id, {
+                    maxAge: 3600000
+                });
+                console.log("Sent cookies.");
+                res.redirect('/');
+            }
+			);
+
+          });
+
+
+module.exports = app;
 
 }());
 
